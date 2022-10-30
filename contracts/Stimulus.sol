@@ -7,4 +7,8 @@ import "./ERC721A/extensions/ERC721AQueryable.sol";
 
 contract Stimulus is ERC721A, ERC721AQueryable {
   constructor() ERC721A("HOST", "HOS") {}
+
+  function mint() public {
+    _mint(msg.sender, 1);
+  }
 }

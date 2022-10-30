@@ -4,6 +4,7 @@ pragma solidity ^0.8.10;
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IMutant.sol";
 
 contract FusionLabs is Ownable, IERC721Receiver {
 
@@ -23,6 +24,7 @@ contract FusionLabs is Ownable, IERC721Receiver {
 
     IERC721 host;
     IERC721 stimulus;
+    IMutant result;
 
     mapping(uint256 => Host) hosts;
     mapping(uint256 => Stimulus) stimuli;
@@ -37,10 +39,12 @@ contract FusionLabs is Ownable, IERC721Receiver {
     constructor(  
         IERC721 _host,
         IERC721 _stimulus,
+        IMutant _result,
         uint256 _maxLocked
     ) {
         host = _host;
         stimulus = _stimulus;
+        result = _result;
         maxLocked = _maxLocked;
     }
 
@@ -93,14 +97,16 @@ contract FusionLabs is Ownable, IERC721Receiver {
         stimuli[_tokenId].locked = true;
     }
 
-    //fusion
     function fusion(uint256 _hostTokenId, uint256 _stimulusTokenId) public 
         onlyHostOwner(_hostTokenId)
         onlyStimulusOwner(_stimulusTokenId)
         onlyFusionAble(_hostTokenId, _stimulusTokenId)
     {
+        hosts[_hostTokenId].used = true;
+        stimuli[_stimulusTokenId].used = true;
         fusioned[_hostTokenId] = _stimulusTokenId; 
-        // emit Fusioned(uint256 _hostTokenId, uint256 _stimulusTokenId);
+        result.mint(msg.sender);
+        emit Fusioned(_hostTokenId, _stimulusTokenId);
     }
 
     function cancelFusion(uint256 _hostTokenId) public onlyHostOwner(_hostTokenId) cancelAble(_hostTokenId) {
@@ -117,13 +123,18 @@ contract FusionLabs is Ownable, IERC721Receiver {
         stimulus.safeTransferFrom(address(this), msg.sender, _stimulusTokenId , "0x02");
     }
 
-    //getter
     function isHostLocked(uint256 _tokenId) public view returns(bool) {
         return hosts[_tokenId].locked;
     }
 
     function isStimulusLocked(uint256 _tokenId) public view returns(bool) {
         return stimuli[_tokenId].locked;
+    }
+    
+    function isFusionable(uint256 _hostTokenId, uint256 _stimulusTokenId) public view returns(bool) {
+        require(isHostLocked(_hostTokenId), 'not locked yet');
+        require(isStimulusLocked(_stimulusTokenId), 'not locked yet');
+        return fusioned[_hostTokenId] == _stimulusTokenId;
     }
 
     function onERC721Received(address operator, address from,  uint256 _tokenId, bytes calldata data) external override returns(bytes4) {
