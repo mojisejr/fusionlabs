@@ -13,5 +13,4 @@ contract Host is ERC721A, ERC721AQueryable {
   function mint() public {
     _mint(msg.sender, 1);
   }
-
 }

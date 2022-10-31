@@ -12,20 +12,31 @@ describe("Labs Tests", async () => {
     const labsFac = await ethers.getContractFactory("FusionLabs");
     const [owner, holder1, holder2] = await ethers.getSigners();
 
+    const labsExpectedAddr = await getExpectedContractAddress(owner, 3);
     const host = await hostFac.deploy();
     await host.deployed();
     const stimulus = await StimulusFac.deploy();
     await stimulus.deployed();
-    const labsExpectedAddr = getExpectedContractAddress(owner, 4);
     const mutant = await mutantFac.deploy(labsExpectedAddr);
     await mutant.deployed();
-    const labs = labsFac.deploy(
+    const labs = await labsFac.deploy(
       host.address,
       stimulus.address,
       mutant.address,
       1000
     );
-    await (await labs).deployed();
+    await labs.deployed();
+
+    // console.log({
+    //   host: host.address,
+    //   stimulus: stimulus.address,
+    //   mutant: mutant.address,
+    //   labsExpect: labsExpectedAddr,
+    //   labs: labs.address,
+    //   //   owner: owner.address,
+    //   holder1: holder1.address,
+    //   holder2: holder2.address,
+    // });
 
     return {
       host,
@@ -42,22 +53,22 @@ describe("Labs Tests", async () => {
   it("Deployment", async () => {
     const { labs } = await deploy();
 
-    await expect((await labs).isFusionable("1", "1")).to.be.revertedWith(
+    await expect(labs.isFusionable("1", "1")).to.be.revertedWith(
       "not locked yet"
     );
   });
 
   it("Should be able to mint NFT", async () => {
     const { host, stimulus, holder1, mutant, labs, holder2 } = await deploy();
-    console.log({
-      host: host.address,
-      stimulus: stimulus.address,
-      mutant: mutant.address,
-      labs: (await labs).address,
-      //   owner: owner.address,
-      holder1: holder1.address,
-      holder2: holder2.address,
-    });
+    // console.log({
+    //   host: host.address,
+    //   stimulus: stimulus.address,
+    //   mutant: mutant.address,
+    //   labs: labs.address,
+    //   //   owner: owner.address,
+    //   holder1: holder1.address,
+    //   holder2: holder2.address,
+    // });
     await host.connect(holder1).mint();
     await stimulus.connect(holder1).mint();
     expect((await host.balanceOf(holder1.address)).toString()).to.equal("1");
@@ -66,20 +77,65 @@ describe("Labs Tests", async () => {
     );
   });
 
+  it("should start minting at tokenId 1 and has correct totalSupply", async () => {
+    const { holder1, host } = await deploy();
+
+    await host.connect(holder1).mint();
+    await host.connect(holder1).mint();
+
+    const totalSupply = await host.totalSupply();
+    const owner = await host.ownerOf("1");
+    const owner2 = await host.ownerOf("2");
+
+    expect(totalSupply.toString()).to.equal("2");
+    expect(owner.toString() === holder1.address).to.be.true;
+    expect(owner2.toString() === holder1.address).to.be.true;
+  });
+
   it("should be able to locked token to the labs", async () => {
     //1 mint host
     //2 mint stimulus
     //3 locked
     //4 check
     const { host, stimulus, labs, holder1 } = await deploy();
+
     await host.connect(holder1).mint();
     await stimulus.connect(holder1).mint();
-    await host.connect(holder1).approve((await labs).address, "0");
-    await stimulus.connect(holder1).approve((await labs).address, "0");
-    (await labs).connect(holder1).lock("0", "0");
-    const balance = await host.balanceOf((await labs).address);
-    console.log(balance);
-    expect(await (await labs).isHostLocked("0")).to.equal(true);
-    expect(await (await labs).isStimulusLocked("0")).to.equal(true);
+    await host.connect(holder1).approve(labs.address, "1");
+    await stimulus.connect(holder1).approve(labs.address, "1");
+    await labs.connect(holder1).lock("1", "1");
+
+    expect(await labs.isHostLocked("1")).to.equal(true);
+    expect(await labs.isStimulusLocked("1")).to.equal(true);
+  });
+  it("should be able to mint mutant after host and stimulus locked in the labs", async () => {
+    const { host, stimulus, labs, mutant, holder1 } = await deploy();
+
+    await host.connect(holder1).mint();
+    await stimulus.connect(holder1).mint();
+    await host.connect(holder1).approve(labs.address, "1");
+    await stimulus.connect(holder1).approve(labs.address, "1");
+    //lock
+    await labs.connect(holder1).lock("1", "1");
+    //fusion
+    await labs.connect(holder1).fusion("1", "1");
+
+    const totalSupply = await mutant.totalSupply();
+    expect(totalSupply.toString()).to.equal("1");
+  });
+  it("should be able to withdraw host and stimulus if not yet fusioned", async () => {
+    const { host, stimulus, labs, mutant, holder1 } = await deploy();
+
+    await host.connect(holder1).mint();
+    await stimulus.connect(holder1).mint();
+    await host.connect(holder1).approve(labs.address, "1");
+    await stimulus.connect(holder1).approve(labs.address, "1");
+    //lock
+    await labs.connect(holder1).lock("1", "1");
+    //fusion
+    await labs.connect(holder1).cancelFusion("1");
+
+    expect((await host.ownerOf("1")).toString()).to.equal(holder1.address);
+    expect((await stimulus.ownerOf("1")).toString()).to.equal(holder1.address);
   });
 });

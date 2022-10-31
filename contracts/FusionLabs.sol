@@ -4,7 +4,8 @@ pragma solidity ^0.8.10;
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./IMutant.sol";
+import "./IResult.sol";
+import "hardhat/console.sol";
 
 contract FusionLabs is Ownable, IERC721Receiver {
 
@@ -24,11 +25,12 @@ contract FusionLabs is Ownable, IERC721Receiver {
 
     IERC721 host;
     IERC721 stimulus;
-    IMutant result;
+    IResult result;
 
     mapping(uint256 => Host) hosts;
     mapping(uint256 => Stimulus) stimuli;
-    mapping(uint256 => uint256) fusioned;
+    mapping(uint256 => uint256) pairs;
+    mapping(uint256 => bool) fusioned;
 
     uint256 totalFusioned;
     uint256 maxLocked;
@@ -39,7 +41,7 @@ contract FusionLabs is Ownable, IERC721Receiver {
     constructor(  
         IERC721 _host,
         IERC721 _stimulus,
-        IMutant _result,
+        IResult _result,
         uint256 _maxLocked
     ) {
         host = _host;
@@ -51,13 +53,23 @@ contract FusionLabs is Ownable, IERC721Receiver {
     //Modifiers
     modifier onlyHostOwner(uint256 _tokenId) {
         require(host.ownerOf(_tokenId) == msg.sender, "only host owner");
-        require(host.getApproved(_tokenId) == msg.sender, "owner does not approved their host");
+        require(host.getApproved(_tokenId) == address(this), "owner does not approved their host");
+        _;
+    }
+
+    modifier onlyLockedHostOwner(uint256 _tokenId) {
+        require(hosts[_tokenId].owner == msg.sender, "only host owner");
         _;
     }
     
     modifier onlyStimulusOwner(uint256 _tokenId) {
         require(stimulus.ownerOf(_tokenId) == msg.sender, "only stimulus owner");
-        require(stimulus.getApproved(_tokenId) == msg.sender, "owner does not approved their stimulus");
+        require(stimulus.getApproved(_tokenId) == address(this), "owner does not approved their stimulus");
+        _;
+    }
+
+    modifier onlyLockedStimulusOwner(uint256 _tokenId) {
+        require(stimuli[_tokenId].owner == msg.sender, "only stimulus owner");
         _;
     }
 
@@ -66,7 +78,7 @@ contract FusionLabs is Ownable, IERC721Receiver {
         require(!hosts[_hostTokenId].used, "token is already fusioned");
         require(stimuli[_stimulusTokenId].locked, "token does not locked");
         require(!stimuli[_stimulusTokenId].used, "token is already fusioned");
-        require(fusioned[_hostTokenId] == _stimulusTokenId, "invalid locked stimulus");
+        require(!fusioned[_hostTokenId], "token is already fusioned");
         _;
     }
 
@@ -81,6 +93,7 @@ contract FusionLabs is Ownable, IERC721Receiver {
         onlyHostOwner(_hostTokenId)
         onlyStimulusOwner(_stimulusTokenId)
     { 
+        pairs[_hostTokenId] = _stimulusTokenId;
         _lockHost(_hostTokenId);
         _lockStimulus(_stimulusTokenId);
     }
@@ -98,19 +111,27 @@ contract FusionLabs is Ownable, IERC721Receiver {
     }
 
     function fusion(uint256 _hostTokenId, uint256 _stimulusTokenId) public 
-        onlyHostOwner(_hostTokenId)
-        onlyStimulusOwner(_stimulusTokenId)
+        onlyLockedHostOwner(_hostTokenId)
+        onlyLockedStimulusOwner(_stimulusTokenId)
         onlyFusionAble(_hostTokenId, _stimulusTokenId)
     {
         hosts[_hostTokenId].used = true;
         stimuli[_stimulusTokenId].used = true;
-        fusioned[_hostTokenId] = _stimulusTokenId; 
-        result.mint(msg.sender);
+        fusioned[_hostTokenId] = true; 
+        _mintTo(msg.sender);
         emit Fusioned(_hostTokenId, _stimulusTokenId);
     }
 
-    function cancelFusion(uint256 _hostTokenId) public onlyHostOwner(_hostTokenId) cancelAble(_hostTokenId) {
-        uint256 stimulusTokenId = fusioned[_hostTokenId];
+    function getFusionedOf(uint256 _hostTokenId) public view returns(uint256) {
+        return pairs[_hostTokenId];
+    }
+
+    function _mintTo(address _to) internal {
+        result.mint(_to);
+    }
+
+    function cancelFusion(uint256 _hostTokenId) public onlyLockedHostOwner(_hostTokenId) cancelAble(_hostTokenId) {
+        uint256 stimulusTokenId = pairs[_hostTokenId];
         _withdrawHost(_hostTokenId);
         _withdrawStimulus(stimulusTokenId);
     }
@@ -134,7 +155,16 @@ contract FusionLabs is Ownable, IERC721Receiver {
     function isFusionable(uint256 _hostTokenId, uint256 _stimulusTokenId) public view returns(bool) {
         require(isHostLocked(_hostTokenId), 'not locked yet');
         require(isStimulusLocked(_stimulusTokenId), 'not locked yet');
-        return fusioned[_hostTokenId] == _stimulusTokenId;
+        require(!hosts[_hostTokenId].used, 'host has been fusioned');
+        require(!stimuli[_stimulusTokenId].used, 'stimuli has been fusioned');
+        require(!fusioned[_hostTokenId], 'token has been fusion');
+        return pairs[_hostTokenId] == _stimulusTokenId;
+    }
+
+    function ownerOf(uint256 _hostTokenId, uint256 _stimulusTokenId, address _owner) public view returns(bool) {
+        require(hosts[_hostTokenId].owner == _owner, "not host owner or not it pair.");
+        require(stimuli[_stimulusTokenId].owner == _owner, "not stimulus owner or not its pair." );
+        return true;
     }
 
     function onERC721Received(address operator, address from,  uint256 _tokenId, bytes calldata data) external override returns(bytes4) {
