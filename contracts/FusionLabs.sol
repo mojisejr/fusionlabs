@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IResult.sol";
-import "hardhat/console.sol";
 
 contract FusionLabs is Ownable, IERC721Receiver {
 
