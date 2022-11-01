@@ -38,21 +38,21 @@ async function deploy() {
 }
 
 async function main() {
-  // const { host, stimulus, labs, mutant } = await deploy();
-  // console.log("deployed addresses: ", { host, stimulus, labs, mutant });
-  const { host, stimulus, labs, mutant } = {
-    host: "0xFba5De93343cB99d69127c10970be31875a2263a",
-    stimulus: "0x3cA7AfA1d2715E1F4bD8a95b7B2780E752855028",
-    labs: "0xB5aB626BcaD0e8c09760e9B1d161578b61CaF559",
-    mutant: "0x57C7D817A4c3f4dBaEBdef2057CDEd8f5e61Cf44",
-  };
+  const { host, stimulus, labs, mutant } = await deploy();
+  console.log("deployed addresses: ", { host, stimulus, labs, mutant });
+  // const { host, stimulus, labs, mutant } = {
+  //   host: "0x96d87cC25d8043DD7ef48734A9b953460d7bD4D5",
+  //   stimulus: "0xCD5B715Cd77DB90B55b12a39bCc3E64fBb57385d",
+  //   labs: "0x5CE5F2f5DE67565cd87fF7DD372a1bfb2BaE102C",
+  //   mutant: "0xD277036173F4C365B54Df6DB6c7167C0afBE50Ab",
+  // };
 
   // verify Contracts
-  // console.log("Host verifing =>  ", host);
-  // await run("verify:verify", {
-  //   address: host,
-  //   contract: "contracts/Host.sol:Host",
-  // });
+  console.log("Host verifing =>  ", host);
+  await run("verify:verify", {
+    address: host,
+    contract: "contracts/Host.sol:Host",
+  });
 
   console.log("Stimulus verifing =>  ", stimulus);
   await run("verify:verify", {
@@ -81,3 +81,10 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+// deployed addresses:  {
+//   host: '0xd32b87eDC46Bc77f9C6f21498effC0a5176624c2',
+//   stimulus: '0x5183D3a27AeC003aFCAF0A4a89515c4397672d79',
+//   labs: '0x0331D5eab37809dFe764382A11B9B676F7886cc2',
+//   mutant: '0xc84E1CAb3C09A4d152119d6d0F0B3015fFD5F4fE'
+// }
