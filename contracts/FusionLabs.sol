@@ -30,6 +30,7 @@ contract FusionLabs is Ownable, IERC721Receiver {
     mapping(uint256 => Stimulus) stimuli;
     mapping(uint256 => uint256) pairs;
     mapping(uint256 => bool) fusioned;
+    mapping(address => uint256[]) locked;
 
     uint256 totalFusioned;
     uint256 maxLocked;
@@ -93,14 +94,30 @@ contract FusionLabs is Ownable, IERC721Receiver {
         onlyStimulusOwner(_stimulusTokenId)
     { 
         pairs[_hostTokenId] = _stimulusTokenId;
+        locked[msg.sender].push(_hostTokenId);
         _lockHost(_hostTokenId);
         _lockStimulus(_stimulusTokenId);
     }
 
+    function getFusionablePairs(address _owner) public view returns(string memory) {
+        string memory useables;
+        uint256[] memory lockedHosts = locked[_owner];
+        for(uint256 i; i < lockedHosts.length; ++i) {
+            if(hosts[lockedHosts[i]].locked && !hosts[lockedHosts[i]].used) {
+                useables = string(abi.encodePacked(useables,'{"host":',toString(lockedHosts[i]),', "stimulus":',toString(pairs[lockedHosts[i]]),'},'));
+            }
+        }
+        useables = substring(useables, 0, bytes(useables).length - 1);
+        useables = string(abi.encodePacked('[',useables,']'));
+    
+        return useables;
+    }
+
+
     function _lockHost (uint256 _tokenId) internal {
         host.safeTransferFrom(msg.sender, address(this), _tokenId, "0x01"); 
         hosts[_tokenId].owner = msg.sender;
-        hosts[_tokenId].locked = true;
+        hosts[_tokenId].locked = true; 
     }
 
     function _lockStimulus (uint256 _tokenId) internal {
@@ -133,6 +150,19 @@ contract FusionLabs is Ownable, IERC721Receiver {
         uint256 stimulusTokenId = pairs[_hostTokenId];
         _withdrawHost(_hostTokenId);
         _withdrawStimulus(stimulusTokenId);
+        uint256[] storage lockedHost = locked[msg.sender];
+        for(uint256 i = 0; i < lockedHost.length; ++i) {
+            if(lockedHost[i] == _hostTokenId) {
+                _removeCancelLocked(i, lockedHost);
+            }
+        }
+    }
+
+    function _removeCancelLocked(uint256 index, uint256[] storage array) internal {
+        for(uint i = index; i < array.length-1; i++){
+            array[i] = array[i+1];      
+        }
+        array.pop();
     }
 
     function _withdrawHost(uint256 _hostTokenId) internal {
@@ -169,5 +199,37 @@ contract FusionLabs is Ownable, IERC721Receiver {
     function onERC721Received(address operator, address from,  uint256 _tokenId, bytes calldata data) external override returns(bytes4) {
         emit Received(_tokenId, from, data);
         return this.onERC721Received.selector;
+    }
+
+    function toString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
+    }
+
+    function substring(
+        string memory str,
+        uint256 startIndex,
+        uint256 endIndex
+    ) internal pure returns (string memory) {
+        bytes memory strBytes = bytes(str);
+        bytes memory result = new bytes(endIndex - startIndex);
+        for (uint256 i = startIndex; i < endIndex; i++) {
+            result[i - startIndex] = strBytes[i];
+        }
+        return string(result);
     }
 }

@@ -136,4 +136,56 @@ describe("Labs Tests", async () => {
     expect((await host.ownerOf("1")).toString()).to.equal(holder1.address);
     expect((await stimulus.ownerOf("1")).toString()).to.equal(holder1.address);
   });
+
+  it("should be able to get fusionable pairs", async () => {
+    const { host, stimulus, labs, mutant, holder1 } = await deploy();
+
+    for (let i = 0; i < 5; i++) {
+      await host.connect(holder1).mint();
+      await stimulus.connect(holder1).mint();
+    }
+
+    for (let i = 1; i < 6; i++) {
+      await host.connect(holder1).approve(labs.address, i);
+      await stimulus.connect(holder1).approve(labs.address, i);
+      await labs.connect(holder1).lock(i, i);
+    }
+
+    //USE SOME TOKENS
+    await labs.connect(holder1).fusion(1, 1);
+    await labs.connect(holder1).fusion(2, 2);
+
+    const pairsString = await labs.getFusionablePairs(holder1.address);
+    const parsed = JSON.parse(pairsString);
+
+    expect(parsed.length).to.equal(3);
+  });
+
+  it("should be able to cancel locked tokens", async () => {
+    const { host, stimulus, labs, mutant, holder1 } = await deploy();
+
+    for (let i = 0; i < 5; i++) {
+      await host.connect(holder1).mint();
+      await stimulus.connect(holder1).mint();
+    }
+
+    for (let i = 1; i < 6; i++) {
+      await host.connect(holder1).approve(labs.address, i);
+      await stimulus.connect(holder1).approve(labs.address, i);
+      await labs.connect(holder1).lock(i, i);
+    }
+
+    //canceled
+    await labs.connect(holder1).cancelFusion(2);
+
+    //USE SOME TOKENS
+    // await labs.connect(holder1).fusion(1, 1);
+    // await labs.connect(holder1).fusion(2, 2);
+
+    const pairsString = await labs.getFusionablePairs(holder1.address);
+    const parsed = JSON.parse(pairsString);
+    console.log(parsed);
+
+    expect(parsed.length).to.equal(4);
+  });
 });
