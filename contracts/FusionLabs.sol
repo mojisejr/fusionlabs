@@ -169,6 +169,14 @@ contract FusionLabs is Ownable, IERC721Receiver {
         devAddr = _newDev;
     }
 
+    function setHost(IERC721 _host) public onlyOwner {
+        host = _host;
+    }
+
+    function setStimulus(IERC721 _stimulus) public onlyOwner {
+        stimulus = _stimulus;
+    }
+
 
     //VIEWS FUNCTIONS
     /////////////////
