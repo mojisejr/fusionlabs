@@ -21,7 +21,8 @@ describe("Labs Tests", async () => {
       host.address,
       stimulus.address,
       mutant.address,
-      1000
+      1000,
+      owner.address
     );
     await labs.deployed();
 
@@ -46,15 +47,6 @@ describe("Labs Tests", async () => {
       holder2,
     };
   }
-
-  //   before(() => {});
-  it("Deployment", async () => {
-    const { labs } = await deploy();
-
-    await expect(labs.isFusionable("1", "1")).to.be.revertedWith(
-      "not locked yet"
-    );
-  });
 
   it("Should be able to mint NFT", async () => {
     const { host, stimulus, holder1, mutant, labs, holder2 } = await deploy();
@@ -184,7 +176,7 @@ describe("Labs Tests", async () => {
 
     const pairsString = await labs.getFusionablePairs(holder1.address);
     const parsed = JSON.parse(pairsString);
-    console.log(parsed);
+    // console.log(parsed);
 
     expect(parsed.length).to.equal(4);
   });
