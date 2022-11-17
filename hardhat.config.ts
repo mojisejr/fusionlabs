@@ -31,14 +31,14 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    // apiKey: "23Y6847UATWJXN3ZUJAYTJFRR4H64HXKXD",
+    // apiKey: "FHZCC9HCY675QMCDID8WG7FH6IDEJSG5B5",
     apiKey: "PX1UPAJSMHJPBT8N6GWIUXQZCE26TFPMU3",
   },
   gasReporter: {
     enabled: true,
     currency: "THB",
     gasPriceApi:
-      "https://api.polygonscan.com/api?module=proxy&action=eth_gasPrice",
+      "https://api.etherscan.io/api?module=proxy&action=eth_gasPrice",
   },
 };
 

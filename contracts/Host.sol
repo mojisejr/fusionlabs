@@ -25,7 +25,7 @@ contract Host is ERC721A, ERC721AQueryable {
   function tokenURI(uint256 _tokenId) public view override(ERC721A, IERC721A) returns(string memory) {
     uint256 trait = _randomTrait(_tokenId);
     string memory bg = background[trait];
-    return string(abi.encodePacked('{"name": "Oppabear Gen 1", "description": "Bear Bear", "image": "https://unsplash.com/photos/AI6fP9IBOYk", "edition": "',toString(_tokenId),'", "attributes": [{"trait_type": "BG", "value": "',bg,'" }]}'));
+    return string(abi.encodePacked('{"name": "Oppabear Gen 1", "description": "Bear Bear", "image": "https://nftstorage.link/ipfs/bafybeierfhiis7snqbvqfpmjhyw6rluxyqqxg5yblvssy3hl7k72nvm53i", "edition": "',toString(_tokenId),'", "attributes": [{"trait_type": "BG", "value": "',bg,'" }]}'));
   }
 
   function toString(uint256 value) internal pure returns (string memory) {

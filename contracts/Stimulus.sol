@@ -23,7 +23,7 @@ contract Stimulus is ERC721A, ERC721AQueryable {
   function tokenURI(uint256 _tokenId) public view override(ERC721A, IERC721A) returns(string memory) {
     uint256 trait = _randomTrait(_tokenId);
     string memory traits = types[trait];
-    return string(abi.encodePacked('{"name": "Oppabear Serum", "description": "T-Virus", "image": "https://unsplash.com/photos/AI6fP9IBOYk", "edition": "',toString(_tokenId),'", "attributes": [{"trait_type": "TYPES", "value": "',traits,'" }]}'));
+    return string(abi.encodePacked('{"name": "Oppabear Serum", "description": "T-Virus", "image": "https://nftstorage.link/ipfs/bafybeia3oin4zv4lzunjdqi7uzlkfifkx4qf7uoxriegvr2iugrkou6tji", "edition": "',toString(_tokenId),'", "attributes": [{"trait_type": "TYPES", "value": "',traits,'" }]}'));
   }
 
   function toString(uint256 value) internal pure returns (string memory) {

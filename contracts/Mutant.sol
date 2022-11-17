@@ -32,7 +32,8 @@ contract Mutant is ERC721A, ERC721AQueryable, Ownable {
     emit Minted(_to, currentId);
   }
 
-  function setBaseURI(uint256 _tokenId, string memory _baseURI) public onlyOwner {
+  function setBaseURI(uint256 _tokenId, string memory _baseURI) public {
+    require(msg.sender == labs, 'invalid minted');
     require(!completed[_tokenId], 'uri has been set');
     completed[_tokenId] = true;
     baseURI[_tokenId] = _baseURI;
